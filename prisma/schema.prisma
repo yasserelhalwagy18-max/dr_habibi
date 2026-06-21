@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  COACH
+  PATIENT
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum PackageStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(PATIENT)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  patientProfile PatientProfile?
+  coachProfile   CoachProfile?
+
+  messagesSent     Message[] @relation("SentMessages")
+  messagesReceived Message[] @relation("ReceivedMessages")
+}
+
+model PatientProfile {
+  id             String    @id @default(uuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth    DateTime?
+  medicalHistory String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  patientPackages PatientPackage[]
+  painLogs        PainLog[]
+}
+
+model CoachProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialties    String[]
+  bio            String?
+  commissionRate Float    @default(0.0) // E.g., 0.20 for 20%
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  sessions Session[]
+}
+
+model Package {
+  id               String   @id @default(uuid())
+  name             String
+  description      String?
+  price            Float
+  numberOfSessions Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  patientPackages PatientPackage[]
+}
+
+model PatientPackage {
+  id                String         @id @default(uuid())
+  patientProfileId  String
+  patientProfile    PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  packageId         String
+  package           Package        @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  status            PackageStatus  @default(ACTIVE)
+  remainingSessions Int
+  startDate         DateTime       @default(now())
+  endDate           DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  sessions     Session[]
+  transactions Transaction[]
+}
+
+model Session {
+  id               String         @id @default(uuid())
+  patientPackageId String
+  patientPackage   PatientPackage @relation(fields: [patientPackageId], references: [id], onDelete: Cascade)
+  coachProfileId   String
+  coachProfile     CoachProfile   @relation(fields: [coachProfileId], references: [id], onDelete: Restrict)
+  scheduledAt      DateTime
+  status           SessionStatus  @default(SCHEDULED)
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  transaction Transaction?
+}
+
+model Transaction {
+  id               String         @id @default(uuid())
+  patientPackageId String
+  patientPackage   PatientPackage @relation(fields: [patientPackageId], references: [id], onDelete: Cascade)
+  sessionId        String?        @unique
+  session          Session?       @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  amount           Float // Amount paid or value of session
+  commissionAmount Float? // Calculated from CoachProfile commissionRate at time of session
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  content    String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model PainLog {
+  id               String         @id @default(uuid())
+  patientProfileId String
+  patientProfile   PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  painLevel        Int // 1-10 scale
+  bodyLocation     String
+  notes            String?
+  loggedAt         DateTime       @default(now())
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
