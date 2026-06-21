@@ -1,0 +1,6 @@
+{
+  "name": "درمان درست",
+  "description": "پلتفرم تخصصی آسیب‌شناسی ورزشی، توانبخشی و حرکات اصلاحی دکتر امیر حبیبی - تشخیص درست، درمان اصولی، حرکت پایدار",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
