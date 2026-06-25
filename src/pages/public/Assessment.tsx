@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { VASlider } from "../../components/ui/VASlider";
 import { PainZone, AssessmentSubmission } from "../../types";
 import { 
@@ -17,7 +17,9 @@ import {
   Activity,
   User,
   Heart,
-  Phone
+  Phone,
+  UploadCloud,
+  X
 } from "lucide-react";
 
 interface AssessmentFormProps {
@@ -30,6 +32,9 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({
   onCancel,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState<AssessmentSubmission>({
     fullName: "",
     phone: "",
@@ -39,6 +44,7 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({
     painIntensity: 4,
     history: "",
     goals: "",
+    mediaFiles: [],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -71,11 +77,84 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({
     setCurrentStep((prev) => prev - 1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateStep(currentStep)) {
+    if (!validateStep(currentStep)) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = new FormData();
+      payload.append("fullName", formData.fullName);
+      payload.append("phone", formData.phone);
+      payload.append("age", formData.age.toString());
+      payload.append("sport", formData.sport);
+      payload.append("selectedZone", formData.selectedZone);
+      payload.append("painIntensity", formData.painIntensity.toString());
+      payload.append("history", formData.history);
+      payload.append("goals", formData.goals);
+
+      if (formData.mediaFiles) {
+        formData.mediaFiles.forEach((file) => {
+          payload.append("mediaFiles", file);
+        });
+      }
+
+      const res = await fetch("http://localhost:5000/api/assessments", {
+        method: "POST",
+        body: payload,
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to submit assessment");
+      }
+
+      const result = await res.json();
+
+      // Still call onSubmit to sync with global store if needed
+      // Note: we can remove it if we fully rely on DB now,
+      // but for UI consistency (showing success alert in App.tsx), we keep it.
       onSubmit(formData);
+
+    } catch (err) {
+      console.error(err);
+      setErrors({ submit: "ارسال فرم با خطا مواجه شد. لطفاً دوباره تلاش کنید." });
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setFormData(prev => ({
+        ...prev,
+        mediaFiles: [...(prev.mediaFiles || []), ...newFiles]
+      }));
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const newFiles = Array.from(e.dataTransfer.files);
+      setFormData(prev => ({
+        ...prev,
+        mediaFiles: [...(prev.mediaFiles || []), ...newFiles]
+      }));
+      e.dataTransfer.clearData();
+    }
+  };
+
+  const removeFile = (idxToRemove: number) => {
+    setFormData(prev => ({
+      ...prev,
+      mediaFiles: (prev.mediaFiles || []).filter((_, idx) => idx !== idxToRemove)
+    }));
   };
 
   return (
@@ -259,6 +338,40 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({
               {errors.goals && <p className="text-[10px] text-red-400 mt-1">{errors.goals}</p>}
             </div>
 
+            <div className="space-y-1.5">
+              <label className="text-xs text-zinc-400 font-medium">آپلود مدارک (MRI، ویدیوی حرکت، تصاویر)</label>
+              <div
+                className="border-2 border-dashed border-zinc-700/50 hover:border-emerald-500/50 rounded-xl p-6 text-center cursor-pointer transition-colors bg-zinc-950/30 relative"
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  multiple
+                  accept="image/*,video/*"
+                  onChange={handleFileChange}
+                />
+                <UploadCloud className="w-8 h-8 text-zinc-500 mx-auto mb-2" />
+                <p className="text-xs text-zinc-400">برای انتخاب فایل‌ها کلیک کنید یا اینجا رها کنید</p>
+              </div>
+
+              {formData.mediaFiles && formData.mediaFiles.length > 0 && (
+                <div className="flex flex-col gap-2 mt-3">
+                  {formData.mediaFiles.map((f, i) => (
+                    <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50">
+                      <span className="text-[11px] text-zinc-300 truncate max-w-[80%]">{f.name}</span>
+                      <button type="button" onClick={() => removeFile(i)} className="text-zinc-500 hover:text-red-400 transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 flex items-start gap-2.5 text-right">
               <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <p className="text-[10px] text-zinc-400 leading-relaxed">
@@ -305,12 +418,21 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({
             <button
               id="assessment-final-submit-btn"
               type="submit"
-              className="py-2.5 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-black transition-all text-xs flex items-center gap-1.5 shadow-[0_0_20px_rgba(16,185,129,0.2)] cursor-pointer"
+              disabled={isSubmitting}
+              className={`py-2.5 px-6 rounded-xl font-black transition-all text-xs flex items-center gap-1.5 shadow-[0_0_20px_rgba(16,185,129,0.2)] cursor-pointer ${
+                isSubmitting
+                  ? 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950'
+              }`}
             >
-              تایید و ثبت پرونده نهایی
+              {isSubmitting ? 'در حال ارسال...' : 'تایید و ثبت پرونده نهایی'}
             </button>
           )}
         </div>
+
+        {errors.submit && (
+          <p className="text-xs text-red-400 text-center mt-2">{errors.submit}</p>
+        )}
 
       </form>
     </div>
