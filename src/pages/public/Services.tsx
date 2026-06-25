@@ -1,8 +1,22 @@
 import React from 'react';
+import { PaymentModal } from '../../components/PaymentModal';
+import { useState } from 'react';
+
 import { ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Services: React.FC = () => {
+  const [paymentModal, setPaymentModal] = useState<{isOpen: boolean, type: 'PACKAGE_12' | 'PACKAGE_24', title: string, price: number}>({
+    isOpen: false,
+    type: 'PACKAGE_12',
+    title: '',
+    price: 0
+  });
+
+  const openPayment = (type: 'PACKAGE_12' | 'PACKAGE_24', title: string, price: number) => {
+    setPaymentModal({ isOpen: true, type, title, price });
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-16">
       <div className="text-center space-y-4 max-w-2xl mx-auto">
@@ -45,9 +59,9 @@ export const Services: React.FC = () => {
                 <span className="text-xs text-zinc-400 mr-2">تومان</span>
               </div>
             </div>
-            <Link to="/assessment" className="flex items-center justify-center w-full py-4 rounded-2xl bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-zinc-300 transition-all duration-300 text-sm font-black group-hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-              درخواست پذیرش و ارزیابی
-            </Link>
+            <button onClick={() => openPayment('PACKAGE_12', 'پکیج ۱۲ جلسه‌ای', 1200000)} className="flex items-center justify-center w-full py-4 rounded-2xl bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-zinc-300 transition-all duration-300 text-sm font-black group-hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+              خرید پکیج
+            </button>
           </div>
         </div>
 
@@ -88,9 +102,9 @@ export const Services: React.FC = () => {
                 <span className="text-xs text-zinc-400 mr-2">تومان</span>
               </div>
             </div>
-            <Link to="/assessment" className="flex items-center justify-center w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-black transition-all duration-300 text-sm shadow-lg hover:shadow-[0_0_25px_rgba(16,185,129,0.4)]">
-              شروع درمان و ارزیابی
-            </Link>
+            <button onClick={() => openPayment('PACKAGE_24', 'پکیج ۲۴ جلسه‌ای', 2200000)} className="flex items-center justify-center w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-black transition-all duration-300 text-sm shadow-lg hover:shadow-[0_0_25px_rgba(16,185,129,0.4)]">
+              خرید پکیج ویژه
+            </button>
           </div>
         </div>
       </div>
@@ -102,6 +116,13 @@ export const Services: React.FC = () => {
           این خدمات برای افرادی طراحی شده که روند درمان را جدی دنبال میکنند. اجرای دقیق برنامه، پیگیری منظم و همکاری دوطرفه، بخش مهمی از رسیدن به نتیجه پایدار است. تعهد شما به تمرینات خانگی به اندازه جلسات کلینیک حائز اهمیت است.
         </p>
       </div>
+      <PaymentModal
+        isOpen={paymentModal.isOpen}
+        onClose={() => setPaymentModal({ ...paymentModal, isOpen: false })}
+        itemType={paymentModal.type}
+        title={paymentModal.title}
+        price={paymentModal.price}
+      />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 import { uploadToS3 } from './utils/s3.js';
 import { PrismaClient } from '@prisma/client';
+import paymentRoutes from './routes/payment.js';
 
 dotenv.config();
 
@@ -21,6 +22,8 @@ const upload = multer({ storage });
 app.get('/', (req: Request, res: Response) => {
   res.send('Server is running');
 });
+
+app.use('/api/payment', paymentRoutes);
 
 // Endpoint to handle Patient Assessment Form submission
 app.post('/api/assessments', upload.array('mediaFiles'), async (req: Request, res: Response): Promise<void> => {
@@ -158,8 +161,8 @@ app.get('/api/admin/finances', async (req: Request, res: Response): Promise<void
 
       return {
         id: t.id,
-        userName: t.patientPackage.patientProfile.user.name,
-        packageType: t.patientPackage.package.name,
+        userName: t.patientPackage?.patientProfile?.user?.name || 'Unknown',
+        packageType: t.patientPackage?.package?.name || t.type,
         amount: t.amount,
         date: t.createdAt,
         status: t.zarinpalRefId ? 'COMPLETED' : 'PENDING'

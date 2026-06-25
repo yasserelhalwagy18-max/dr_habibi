@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -35,6 +36,22 @@ enum PackageStatus {
   COMPLETED
 }
 
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum TransactionType {
+  ASSESSMENT
+  PACKAGE
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -51,6 +68,7 @@ model User {
   messagesSent     Message[]      @relation("SentMessages")
   messagesReceived Message[]      @relation("ReceivedMessages")
   notifications    Notification[] @relation("UserNotifications")
+  transactions     Transaction[]  @relation("UserTransactions")
 }
 
 model PatientProfile {
@@ -131,17 +149,41 @@ model Session {
 }
 
 model Transaction {
-  id                String         @id @default(uuid())
-  patientPackageId  String
-  patientPackage    PatientPackage @relation(fields: [patientPackageId], references: [id], onDelete: Cascade)
-  sessionId         String?        @unique
-  session           Session?       @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  amount            Float // Amount paid or value of session
+  id                String            @id @default(uuid())
+  userId            String?
+  user              User?             @relation("UserTransactions", fields: [userId], references: [id], onDelete: SetNull)
+  patientPackageId  String?
+  patientPackage    PatientPackage?   @relation(fields: [patientPackageId], references: [id], onDelete: Cascade)
+  sessionId         String?           @unique
+  session           Session?          @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  assessmentFormId  String?
+  assessmentForm    AssessmentForm?   @relation(fields: [assessmentFormId], references: [id], onDelete: SetNull)
+  amount            Float // Final amount paid
+  baseAmount        Float? // Amount before discount
   commissionAmount  Float? // Fixed amount per package/session as per requirements
   zarinpalAuthority String? // Added Zarinpal authority field
   zarinpalRefId     String? // Added Zarinpal refId field
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  status            TransactionStatus @default(PENDING)
+  type              TransactionType   @default(PACKAGE)
+  discountCodeId    String?
+  discountCode      DiscountCode?     @relation(fields: [discountCodeId], references: [id], onDelete: SetNull)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+
+model DiscountCode {
+  id             String       @id @default(uuid())
+  code           String       @unique
+  type           DiscountType
+  value          Float // Percentage or fixed amount
+  expirationDate DateTime?
+  maxUses        Int?
+  usedCount      Int          @default(0)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  transactions Transaction[]
 }
 
 model Message {
@@ -170,23 +212,26 @@ model PainLog {
 }
 
 model AssessmentForm {
-  id            String   @id @default(uuid())
-  fullName      String
-  phone         String
-  age           Int
-  gender        Gender   @default(MALE)
-  sport         String
-  selectedZone  String
-  painIntensity Int
-  history       String
-  goals         String
-  mediaUrls     String[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String   @id @default(uuid())
+  fullName       String
+  phone          String
+  age            Int
+  gender         Gender   @default(MALE)
+  sport          String
+  selectedZone   String
+  painIntensity  Int
+  history        String
+  goals          String
+  mediaUrls      String[]
+  assessmentPaid Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Once approved or finalized, it can be linked to a patient profile
   patientProfileId String?
   patientProfile   PatientProfile? @relation(fields: [patientProfileId], references: [id], onDelete: SetNull)
+
+  transactions Transaction[]
 }
 
 model Notification {
