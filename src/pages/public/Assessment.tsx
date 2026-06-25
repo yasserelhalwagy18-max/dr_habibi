@@ -1,3 +1,4 @@
+import { PaymentModal } from "../../components/PaymentModal";
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -49,6 +50,8 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPayment, setShowPayment] = useState(false);
+  const [assessmentFormId, setAssessmentFormId] = useState<string | null>(null);
 
   const validateStep = (step: number) => {
     const newErrors: Record<string, string> = {};
@@ -452,6 +455,14 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({
         )}
 
       </form>
+      <PaymentModal
+        isOpen={showPayment}
+        onClose={() => setShowPayment(false)}
+        itemType="ASSESSMENT"
+        title="هزینه ارزیابی اولیه و تشکیل پرونده"
+        price={150000}
+        assessmentFormId={assessmentFormId}
+      />
     </div>
   );
 };

@@ -20,6 +20,9 @@ import { Blog } from "./pages/public/Blog";
 import { Webinars } from "./pages/public/Webinars";
 import { AssessmentForm } from "./pages/public/Assessment";
 
+import { Success as PaymentSuccess } from './pages/public/payment/Success';
+import { Failure as PaymentFailure } from './pages/public/payment/Failure';
+
 // Protected Pages
 import { PatientPortal } from "./pages/protected/PatientPortal";
 import { CoachPortal } from "./pages/protected/CoachPortal";
@@ -91,6 +94,9 @@ export default function App() {
             <div className="py-8"><AssessmentForm onSubmit={assessmentSubmit} onCancel={() => window.history.back()} /></div>
           } />
         </Route>
+
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/failure" element={<PaymentFailure />} />
 
         {/* Protected Routes */}
         <Route path="/dashboard" element={<ProtectedLayout />}>
