@@ -5,6 +5,8 @@ import multer from 'multer';
 import { uploadToS3 } from './utils/s3.js';
 import { PrismaClient } from '@prisma/client';
 import paymentRoutes from './routes/payment.js';
+import authRoutes from './routes/auth.js';
+import patientRoutes from './routes/patient.js';
 
 dotenv.config();
 
@@ -23,7 +25,9 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Server is running');
 });
 
+app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/patient', patientRoutes);
 
 // Endpoint to handle Patient Assessment Form submission
 app.post('/api/assessments', upload.array('mediaFiles'), async (req: Request, res: Response): Promise<void> => {
