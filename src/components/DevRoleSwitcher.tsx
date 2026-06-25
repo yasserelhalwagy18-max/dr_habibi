@@ -35,6 +35,14 @@ export const DevRoleSwitcher: React.FC = () => {
         >
           پورتال مربی
         </button>
+        <button
+          onClick={() => navigate('/dashboard/admin')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-right ${
+            location.pathname.includes('/dashboard/admin') ? 'bg-indigo-500/10 text-indigo-400' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+          }`}
+        >
+          پورتال ادمین
+        </button>
       </div>
     </div>
   );

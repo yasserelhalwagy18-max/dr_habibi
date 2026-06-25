@@ -39,6 +39,7 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({
     fullName: "",
     phone: "",
     age: 26,
+    gender: "MALE",
     sport: "",
     selectedZone: "knee",
     painIntensity: 4,
@@ -253,6 +254,22 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({
                     className="w-full p-3 bg-zinc-950/60 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 transition-all text-right"
                   />
                   <Calendar className="w-4 h-4 text-zinc-500 absolute top-3.5 left-3 pointer-events-none" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-zinc-400 mb-2">جنسیت</label>
+                <div className="relative">
+                  <select
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value as "MALE" | "FEMALE" })}
+                    className="w-full p-3 bg-zinc-950/60 border border-zinc-800 rounded-xl text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 transition-all text-right appearance-none"
+                    style={{ direction: "rtl" }}
+                  >
+                    <option value="MALE">مرد</option>
+                    <option value="FEMALE">زن</option>
+                  </select>
+                  <User className="w-4 h-4 text-zinc-500 absolute top-3.5 left-3 pointer-events-none" />
                 </div>
               </div>
 

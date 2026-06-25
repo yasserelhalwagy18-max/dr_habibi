@@ -12,6 +12,16 @@ enum Role {
   PATIENT
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum NotificationType {
+  SYSTEM
+  INDIVIDUAL
+}
+
 enum SessionStatus {
   SCHEDULED
   COMPLETED
@@ -31,25 +41,30 @@ model User {
   passwordHash String
   name         String
   role         Role     @default(PATIENT)
+  gender       Gender   @default(MALE)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   patientProfile PatientProfile?
   coachProfile   CoachProfile?
 
-  messagesSent     Message[] @relation("SentMessages")
-  messagesReceived Message[] @relation("ReceivedMessages")
+  messagesSent     Message[]      @relation("SentMessages")
+  messagesReceived Message[]      @relation("ReceivedMessages")
+  notifications    Notification[] @relation("UserNotifications")
 }
 
 model PatientProfile {
-  id             String    @id @default(uuid())
-  userId         String    @unique
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  dateOfBirth    DateTime?
-  medicalHistory String?
-  notes          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id              String        @id @default(uuid())
+  userId          String        @unique
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gender          Gender        @default(MALE)
+  dateOfBirth     DateTime?
+  medicalHistory  String?
+  notes           String?
+  assignedCoachId String?
+  assignedCoach   CoachProfile? @relation("AssignedCoach", fields: [assignedCoachId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   patientPackages PatientPackage[]
   painLogs        PainLog[]
@@ -63,10 +78,12 @@ model CoachProfile {
   specialties    String[]
   bio            String?
   commissionRate Float    @default(0.0) // E.g., 0.20 for 20%
+  isApproved     Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   sessions Session[]
+  patients PatientProfile[] @relation("AssignedCoach")
 }
 
 model Package {
@@ -157,6 +174,7 @@ model AssessmentForm {
   fullName      String
   phone         String
   age           Int
+  gender        Gender   @default(MALE)
   sport         String
   selectedZone  String
   painIntensity Int
@@ -169,4 +187,15 @@ model AssessmentForm {
   // Once approved or finalized, it can be linked to a patient profile
   patientProfileId String?
   patientProfile   PatientProfile? @relation(fields: [patientProfileId], references: [id], onDelete: SetNull)
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  title     String
+  content   String
+  type      NotificationType @default(SYSTEM)
+  userId    String?
+  user      User?            @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
 }
