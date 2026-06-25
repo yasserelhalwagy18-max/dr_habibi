@@ -71,4 +71,5 @@ export interface AssessmentSubmission {
   painIntensity: number;
   history: string;
   goals: string;
+  mediaFiles?: File[];
 }

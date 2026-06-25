@@ -53,6 +53,7 @@ model PatientProfile {
 
   patientPackages PatientPackage[]
   painLogs        PainLog[]
+  assessmentForms AssessmentForm[]
 }
 
 model CoachProfile {
@@ -149,4 +150,23 @@ model PainLog {
   loggedAt         DateTime       @default(now())
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+}
+
+model AssessmentForm {
+  id            String   @id @default(uuid())
+  fullName      String
+  phone         String
+  age           Int
+  sport         String
+  selectedZone  String
+  painIntensity Int
+  history       String
+  goals         String
+  mediaUrls     String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Once approved or finalized, it can be linked to a patient profile
+  patientProfileId String?
+  patientProfile   PatientProfile? @relation(fields: [patientProfileId], references: [id], onDelete: SetNull)
 }
