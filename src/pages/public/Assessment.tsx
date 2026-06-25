@@ -4,8 +4,8 @@
  */
 
 import React, { useState } from "react";
-import { VASlider } from "./VASlider";
-import { PainZone, AssessmentSubmission } from "../types";
+import { VASlider } from "../../components/ui/VASlider";
+import { PainZone, AssessmentSubmission } from "../../types";
 import { 
   ChevronRight, 
   ChevronLeft, 

@@ -7,7 +7,7 @@ import React, { useState } from "react";
 import { format, subDays, addDays, isSameDay } from "date-fns";
 import { motion, AnimatePresence } from "motion/react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { ClientRecord, PatientExercise } from "../types";
+import { ClientRecord, PatientExercise } from "../../types";
 import { 
   Heart, 
   Activity, 
