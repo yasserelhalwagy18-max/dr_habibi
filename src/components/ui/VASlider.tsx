@@ -4,7 +4,7 @@
  */
 
 import React from "react";
-import { PainZone } from "../types";
+import { PainZone } from "../../types";
 import { 
   Activity, 
   HelpCircle, 

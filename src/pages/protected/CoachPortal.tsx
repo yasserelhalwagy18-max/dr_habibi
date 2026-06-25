@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from "react";
-import { ClientRecord, PatientExercise } from "../types";
+import { ClientRecord, PatientExercise } from "../../types";
 import { 
   Users, 
   Activity, 
