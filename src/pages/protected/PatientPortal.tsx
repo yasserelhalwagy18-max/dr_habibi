@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format, subDays, addDays, isSameDay } from "date-fns";
 import { motion, AnimatePresence } from "motion/react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -47,10 +47,101 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({
   const [painNotes, setPainNotes] = useState<string>("");
   const [feedbackInput, setFeedbackInput] = useState<string>("");
   const [playingExercise, setPlayingExercise] = useState<PatientExercise | null>(null);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [videoFiles, setVideoFiles] = useState<Record<string, File>>({});
   
   // Daily check-in state
   const [checkInMood, setCheckInMood] = useState<number>(3);
   const [checkInSleep, setCheckInSleep] = useState<number>(3);
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch('http://localhost:5000/api/patient/dashboard', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          setDashboardData(data.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+      }
+    };
+    fetchDashboard();
+  }, []);
+
+  const handleVideoUpload = async (prescriptionId: string) => {
+    const file = videoFiles[prescriptionId];
+    if (!file) return;
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('video', file);
+    try {
+      const res = await fetch(`http://localhost:5000/api/patient/prescriptions/${prescriptionId}/submit`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Video uploaded successfully!');
+        setVideoFiles(prev => {
+            const next = { ...prev };
+            delete next[prescriptionId];
+            return next;
+        });
+      } else {
+        alert('Upload failed: ' + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error uploading video.');
+    }
+  };
+
+  const handleCheckInSubmit = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        // Fallback for mock without token
+        onAddCheckIn(checkInMood, checkInSleep);
+        setCheckInMood(3);
+        setCheckInSleep(3);
+        return;
+    }
+    try {
+      const res = await fetch('http://localhost:5000/api/patient/checkin', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          painLevel: newPainVal,
+          painLocation: patientRecord.selectedZone || patientRecord.injuryZone,
+          notes: painNotes,
+          sleepQuality: checkInSleep,
+          energyLevel: checkInMood
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        onAddCheckIn(checkInMood, checkInSleep); // fallback to local store for UI
+        setCheckInMood(3);
+        setCheckInSleep(3);
+        setNewPainVal(4);
+        setPainNotes("");
+        alert('Check-in saved successfully!');
+      } else {
+        alert('Check-in failed: ' + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error submitting check-in.');
+    }
+  };
   const [hoveredExerciseId, setHoveredExerciseId] = useState<string | null>(null);
 
   const painHistory = patientRecord.painHistory || [];
@@ -168,9 +259,13 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({
               <div>
                 <span className="text-[10px] text-zinc-400 block font-medium">جلسات ریکاوری انجام‌شده</span>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-white">{patientRecord.sessionsCompleted}</span>
+                  <span className="text-2xl font-black text-white">
+                    {dashboardData?.activePackage ? dashboardData.activePackage.remainingSessions : patientRecord.sessionsCompleted}
+                  </span>
                   <span className="text-xs text-zinc-500">از</span>
-                  <span className="text-sm font-bold text-zinc-400">{patientRecord.sessionsPurchased} جلسه</span>
+                  <span className="text-sm font-bold text-zinc-400">
+                    {dashboardData?.activePackage ? "پکیج فعال" : `${patientRecord.sessionsPurchased} جلسه`}
+                  </span>
                 </div>
               </div>
             </div>
@@ -344,11 +439,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({
             </div>
 
             <button
-              onClick={() => {
-                onAddCheckIn(checkInMood, checkInSleep);
-                setCheckInMood(3);
-                setCheckInSleep(3);
-              }}
+              onClick={handleCheckInSubmit}
               className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-white font-bold transition-all text-xs cursor-pointer"
             >
               ثبت ارزیابی روزانه
@@ -373,7 +464,8 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({
 
         {/* Exercises Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4" id="patient-workout-grid">
-          {patientRecord.prescription?.map((ex) => {
+            {(dashboardData?.prescriptions || patientRecord.prescription)?.map((prescription: any) => {
+              const ex = prescription.exercise ? { ...prescription.exercise, ...prescription, completed: prescription.submissions && prescription.submissions.length > 0, prescriptionId: prescription.id } : prescription;
             return (
               <div 
                 key={ex.id} 
@@ -454,14 +546,34 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({
                   </div>
                 </div>
 
-                <button
-                  id={`ex-watch-btn-${ex.id}`}
-                  onClick={() => setPlayingExercise(ex)}
-                  className="w-full py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all text-[10px] font-semibold flex items-center justify-center gap-1.5 border border-zinc-800/80 cursor-pointer"
-                >
-                  <Play className="w-3 h-3 text-emerald-400" />
-                  آموزش تصویری حرکت
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    id={`ex-watch-btn-${ex.id}`}
+                    onClick={() => setPlayingExercise(ex)}
+                    className="flex-1 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all text-[10px] font-semibold flex items-center justify-center gap-1.5 border border-zinc-800/80 cursor-pointer"
+                  >
+                    <Play className="w-3 h-3 text-emerald-400" />
+                    آموزش تصویری
+                  </button>
+                  <div className="flex-1 flex flex-col gap-1">
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                              setVideoFiles(prev => ({ ...prev, [ex.prescriptionId || ex.id]: e.target.files![0] }));
+                          }
+                      }}
+                      className="text-[8px] text-zinc-400 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[8px] file:bg-zinc-800 file:text-emerald-400 hover:file:bg-zinc-700 w-full"
+                    />
+                    <button
+                      onClick={() => handleVideoUpload(ex.prescriptionId || ex.id)}
+                      className="w-full py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 transition-all text-[10px] font-semibold border border-emerald-500/30 cursor-pointer"
+                    >
+                      ارسال ویدیو
+                    </button>
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -619,7 +731,28 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({
           </div>
 
           <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1" id="completed-sessions-list">
-            {patientRecord.completedSessionsLog?.length > 0 ? (
+            {dashboardData?.historyLogs?.length > 0 ? (
+              dashboardData.historyLogs.map((log: any, idx: number) => (
+                <div key={idx} className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60 text-right space-y-1.5">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="font-bold text-teal-400">پایش هفتگی #{idx + 1}</span>
+                    <span className="text-zinc-500 font-mono">{new Date(log.createdAt).toLocaleDateString("fa-IR")}</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-300">
+                    سطح درد: {log.painLevel}/10 - کیفیت خواب: {log.sleepQuality}/5
+                  </p>
+                  {log.notes && (
+                    <p className="text-[11px] text-zinc-400 mt-1">
+                      یادداشت: {log.notes}
+                    </p>
+                  )}
+                  <div className="text-[9px] text-zinc-500 flex items-center gap-1.5">
+                    <CheckCircle className="w-3 h-3 text-emerald-500" />
+                    <span>انرژی/روحیه: {log.energyLevel}/5</span>
+                  </div>
+                </div>
+              ))
+            ) : patientRecord.completedSessionsLog?.length > 0 ? (
               patientRecord.completedSessionsLog.map((log, idx) => (
                 <div key={idx} className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60 text-right space-y-1.5">
                   <div className="flex justify-between items-center text-[10px]">

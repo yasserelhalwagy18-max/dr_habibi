@@ -84,9 +84,11 @@ model PatientProfile {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  patientPackages PatientPackage[]
-  painLogs        PainLog[]
-  assessmentForms AssessmentForm[]
+  patientPackages  PatientPackage[]
+  painLogs         PainLog[]
+  assessmentForms  AssessmentForm[]
+  prescriptions    Prescription[]
+  progressCheckIns ProgressCheckIn[]
 }
 
 model CoachProfile {
@@ -243,4 +245,54 @@ model Notification {
   user      User?            @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
   isRead    Boolean          @default(false)
   createdAt DateTime         @default(now())
+}
+
+model Exercise {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  videoUrl    String?
+  aparatHash  String?
+  category    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  prescriptions Prescription[]
+}
+
+model Prescription {
+  id               String         @id @default(uuid())
+  patientProfileId String
+  patientProfile   PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  exerciseId       String
+  exercise         Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+  sets             Int
+  reps             String
+  frequency        String?
+  instructions     String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  submissions ExerciseSubmission[]
+}
+
+model ExerciseSubmission {
+  id             String       @id @default(uuid())
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  videoUrl       String
+  notes          String?
+  createdAt      DateTime     @default(now())
+}
+
+model ProgressCheckIn {
+  id               String         @id @default(uuid())
+  patientProfileId String
+  patientProfile   PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  painLevel        Int
+  painLocation     String?
+  notes            String?
+  sleepQuality     Int
+  energyLevel      Int
+  createdAt        DateTime       @default(now())
 }

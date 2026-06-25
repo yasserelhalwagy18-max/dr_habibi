@@ -31,6 +31,7 @@ export interface PatientExercise {
   progress?: number; // 0 to 100
   videoUrl?: string; // Standardized video/animation instructions placeholder
   description: string;
+  prescriptionId?: string; // Added to link uploads to the prescription
 }
 
 export interface CheckIn {
