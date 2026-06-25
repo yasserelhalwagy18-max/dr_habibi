@@ -3,26 +3,42 @@
 > vite --port=3000 --host=0.0.0.0
 
 
-  VITE v6.4.3  ready in 436 ms
+  VITE v6.4.3  ready in 390 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: http://192.168.0.2:3000/
-3:22:44 PM [vite] (client) hmr update /src/pages/protected/AdminPortal.tsx, /src/index.css
-3:22:53 PM [vite] (client) hmr update /src/pages/protected/AdminPortal.tsx, /src/index.css
-3:23:20 PM [vite] (client) page reload server/src/index.ts
-3:25:58 PM [vite] (client) page reload server/dist/routes.js
-3:25:58 PM [vite] (client) page reload server/dist/src/index.js
-3:25:58 PM [vite] (client) page reload server/dist/src/index.d.ts
-3:25:58 PM [vite] (client) page reload server/dist/src/index.d.ts.map
-3:25:58 PM [vite] (client) page reload server/dist/src/index.js.map
-3:25:58 PM [vite] (client) page reload server/dist/utils/s3.js
-3:25:58 PM [vite] (client) page reload server/dist/utils/s3.d.ts
-3:25:58 PM [vite] (client) page reload server/dist/utils/s3.d.ts.map
-3:25:58 PM [vite] (client) page reload server/dist/utils/s3.js.map
-3:25:58 PM [vite] (client) page reload server/dist/index.js
-3:25:58 PM [vite] (client) page reload server/dist/index.d.ts.map
-3:25:58 PM [vite] (client) page reload server/dist/index.d.ts
-3:25:58 PM [vite] (client) page reload server/dist/routes.d.ts
-3:25:58 PM [vite] (client) page reload server/dist/routes.js.map
-3:25:58 PM [vite] (client) page reload server/dist/index.js.map
-3:25:58 PM [vite] (client) page reload server/dist/routes.d.ts.map
+6:04:43 PM [vite] (client) page reload server/src/routes/coach.ts
+6:04:51 PM [vite] (client) page reload server/src/routes/coach.ts
+6:04:59 PM [vite] (client) page reload server/dist/utils/s3.js.map
+6:04:59 PM [vite] (client) page reload server/dist/utils/s3.js
+6:04:59 PM [vite] (client) page reload server/dist/utils/s3.d.ts.map
+6:04:59 PM [vite] (client) page reload server/dist/utils/s3.d.ts
+6:04:59 PM [vite] (client) page reload server/dist/routes/payment.js.map
+6:04:59 PM [vite] (client) page reload server/dist/routes/payment.js
+6:04:59 PM [vite] (client) page reload server/dist/routes/payment.d.ts.map
+6:04:59 PM [vite] (client) page reload server/dist/routes/payment.d.ts
+6:04:59 PM [vite] (client) page reload server/dist/routes/auth.js.map
+6:04:59 PM [vite] (client) page reload server/dist/routes/auth.js
+6:04:59 PM [vite] (client) page reload server/dist/routes/auth.d.ts.map
+6:04:59 PM [vite] (client) page reload server/dist/routes/auth.d.ts
+6:04:59 PM [vite] (client) page reload server/dist/utils/authMiddleware.js.map
+6:04:59 PM [vite] (client) page reload server/dist/utils/authMiddleware.js
+6:04:59 PM [vite] (client) page reload server/dist/utils/authMiddleware.d.ts.map
+6:04:59 PM [vite] (client) page reload server/dist/utils/authMiddleware.d.ts
+6:04:59 PM [vite] (client) page reload server/dist/routes/patient.js.map
+6:04:59 PM [vite] (client) page reload server/dist/routes/patient.js
+6:04:59 PM [vite] (client) page reload server/dist/routes/patient.d.ts.map
+6:04:59 PM [vite] (client) page reload server/dist/routes/patient.d.ts
+6:04:59 PM [vite] (client) page reload server/dist/routes/coach.js.map
+6:04:59 PM [vite] (client) page reload server/dist/routes/coach.js
+6:04:59 PM [vite] (client) page reload server/dist/routes/coach.d.ts.map
+6:04:59 PM [vite] (client) page reload server/dist/routes/coach.d.ts
+6:04:59 PM [vite] (client) page reload server/dist/routes/chat.js.map
+6:04:59 PM [vite] (client) page reload server/dist/routes/chat.js
+6:04:59 PM [vite] (client) page reload server/dist/routes/chat.d.ts.map
+6:04:59 PM [vite] (client) page reload server/dist/routes/chat.d.ts
+6:04:59 PM [vite] (client) page reload server/dist/index.js
+6:04:59 PM [vite] (client) page reload server/dist/index.js.map
+6:04:59 PM [vite] (client) page reload server/dist/index.d.ts.map
+6:04:59 PM [vite] (client) page reload server/dist/index.d.ts
+6:07:04 PM [vite] (client) hmr update /src/pages/protected/CoachPortal.tsx, /src/index.css

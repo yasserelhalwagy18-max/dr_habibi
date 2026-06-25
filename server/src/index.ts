@@ -4,13 +4,25 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 import { uploadToS3 } from './utils/s3.js';
 import { PrismaClient } from '@prisma/client';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import paymentRoutes from './routes/payment.js';
 import authRoutes from './routes/auth.js';
 import patientRoutes from './routes/patient.js';
+import coachRoutes from './routes/coach.js';
+import chatRoutes from './routes/chat.js';
 
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*', // In production, replace with actual frontend URL
+    methods: ['GET', 'POST']
+  }
+});
+
 const port = process.env.PORT || 5000;
 const prisma = new PrismaClient();
 
@@ -28,6 +40,43 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/patient', patientRoutes);
+app.use('/api/coach', coachRoutes);
+app.use('/api/chat', chatRoutes);
+
+// Socket.io for Real-time Chat
+io.on('connection', (socket) => {
+  console.log(`User connected: ${socket.id}`);
+
+  // User joins their own personal room (using their userId) to receive direct messages
+  socket.on('join', (userId: string) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined their room.`);
+  });
+
+  // Handle sending a message
+  socket.on('sendMessage', async (data: { senderId: string, receiverId: string, content: string }) => {
+    try {
+      // 1. Save to DB
+      const message = await prisma.message.create({
+        data: {
+          senderId: data.senderId,
+          receiverId: data.receiverId,
+          content: data.content,
+        }
+      });
+
+      // 2. Broadcast to receiver (if online) and back to sender (to confirm sent)
+      io.to(data.receiverId).emit('newMessage', message);
+      io.to(data.senderId).emit('newMessage', message);
+    } catch (error) {
+      console.error('Error saving/sending message via socket:', error);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`User disconnected: ${socket.id}`);
+  });
+});
 
 // Endpoint to handle Patient Assessment Form submission
 app.post('/api/assessments', upload.array('mediaFiles'), async (req: Request, res: Response): Promise<void> => {
@@ -256,6 +305,6 @@ app.post('/api/admin/notifications', async (req: Request, res: Response): Promis
   }
 });
 
-app.listen(port, () => {
+httpServer.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });

@@ -27,11 +27,33 @@ import { Failure as PaymentFailure } from './pages/public/payment/Failure';
 import { PatientPortal } from "./pages/protected/PatientPortal";
 import { CoachPortal } from "./pages/protected/CoachPortal";
 import { AdminPortal } from "./pages/protected/AdminPortal";
+import { ChatDashboard } from "./components/ChatDashboard";
 
 // Dev Helper
 import { DevRoleSwitcher } from "./components/DevRoleSwitcher";
 
 export default function App() {
+  const [currentUserId, setCurrentUserId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    // In a real app, you would fetch the current user's profile or extract ID from JWT
+    const fetchUserId = async () => {
+       const token = localStorage.getItem('token');
+       if (!token) return;
+       // Mock decoding or fetching from an endpoint to get the user ID
+       // We'll extract it from the payload if it's a standard JWT
+       try {
+         const payload = JSON.parse(atob(token.split('.')[1]));
+         if (payload && payload.id) {
+            setCurrentUserId(payload.id);
+         }
+       } catch (e) {
+          console.error("Failed to decode token", e);
+       }
+    };
+    fetchUserId();
+  }, []);
+
   const {
     alertConfig,
     dismissAlert,
@@ -123,6 +145,16 @@ export default function App() {
                 feedbacks={activeClientFeedbacks}
                 onAddClient={(newC) => addClient(newC)}
               />
+            </div>
+          } />
+          <Route path="coach/chat" element={
+            <div className="py-8">
+              <ChatDashboard currentUserId={currentUserId} currentUserRole="coach" />
+            </div>
+          } />
+          <Route path="patient/chat" element={
+            <div className="py-8">
+              <ChatDashboard currentUserId={currentUserId} currentUserRole="patient" />
             </div>
           } />
           <Route path="admin" element={
