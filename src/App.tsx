@@ -23,6 +23,7 @@ import { AssessmentForm } from "./pages/public/Assessment";
 // Protected Pages
 import { PatientPortal } from "./pages/protected/PatientPortal";
 import { CoachPortal } from "./pages/protected/CoachPortal";
+import { AdminPortal } from "./pages/protected/AdminPortal";
 
 // Dev Helper
 import { DevRoleSwitcher } from "./components/DevRoleSwitcher";
@@ -116,6 +117,11 @@ export default function App() {
                 feedbacks={activeClientFeedbacks}
                 onAddClient={(newC) => addClient(newC)}
               />
+            </div>
+          } />
+          <Route path="admin" element={
+            <div className="py-8">
+              <AdminPortal />
             </div>
           } />
         </Route>

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type UserRole = "guest" | "patient" | "coach";
+export type UserRole = "guest" | "patient" | "coach" | "admin";
 
 export type PainZone = 
   | "shoulder" 
@@ -66,6 +66,7 @@ export interface AssessmentSubmission {
   fullName: string;
   phone: string;
   age: number;
+  gender: "MALE" | "FEMALE";
   sport: string;
   selectedZone: PainZone;
   painIntensity: number;
