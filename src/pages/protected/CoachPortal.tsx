@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ClientRecord, PatientExercise } from "../../types";
 import { 
   Users, 
@@ -35,7 +35,7 @@ interface CoachPortalProps {
 }
 
 export const CoachPortal: React.FC<CoachPortalProps> = ({
-  clients,
+  clients: mockClients,
   activeClientId,
   onSelectClient,
   onEndSession,
@@ -46,6 +46,92 @@ export const CoachPortal: React.FC<CoachPortalProps> = ({
   const [sessionNotes, setSessionNotes] = useState<string>("بیمار انقباض عملکردی زانو را با درد آستانه تحمل مناسب اجرا نمود. هیچ‌گونه خالی کردن مفصل زانو در حین فعالیت گزارش نشد.");
   const [feedbackText, setFeedbackText] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const [apiClients, setApiClients] = useState<ClientRecord[]>([]);
+  const [finances, setFinances] = useState<{totalIncome: number, transactions: any[]}>({ totalIncome: 0, transactions: [] });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchCoachData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const [patientsRes, financesRes] = await Promise.all([
+          fetch('http://localhost:5000/api/coach/patients', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch('http://localhost:5000/api/coach/finances', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+        ]);
+
+        const patientsData = await patientsRes.json();
+        const financesData = await financesRes.json();
+
+        if (patientsData.success) {
+          // Map backend patient profiles to frontend ClientRecord
+          const mappedClients: ClientRecord[] = patientsData.data.map((p: any) => {
+            const activePackage = p.patientPackages?.[0];
+            return {
+              id: p.id,
+              userId: p.userId, // keep track of userId for chat
+              name: p.user.name,
+              fullName: p.user.name,
+              phone: "09121111111", // mock
+              email: p.user.email,
+              age: 30, // mock or calculate from dob
+              sport: p.notes || "ورزشکار", // mock
+              injury: p.medicalHistory || "آسیب نامشخص",
+              injuryZone: "knee", // mock
+              joinDate: new Date(p.createdAt).toLocaleDateString("fa-IR"),
+              sessionsPurchased: activePackage?.package?.numberOfSessions || 0,
+              sessionsCompleted: activePackage ? (activePackage.package.numberOfSessions - activePackage.remainingSessions) : 0,
+              initialPainLevel: 5,
+              currentPainLevel: p.painLogs?.[0]?.painLevel || 0,
+              painHistory: p.painLogs?.map((log: any) => ({
+                date: new Date(log.createdAt).toLocaleDateString("fa-IR"),
+                intensity: log.painLevel
+              })) || [],
+              prescription: p.prescriptions?.map((pres: any) => ({
+                id: pres.id,
+                name: pres.exercise?.title || "تمرین",
+                reps: pres.reps,
+                sets: pres.sets,
+                completed: pres.submissions && pres.submissions.length > 0,
+                description: pres.instructions || pres.exercise?.description || "",
+                videoUrl: pres.submissions && pres.submissions.length > 0 ? pres.submissions[0].videoUrl : undefined,
+              })) || [],
+              notes: p.notes || "",
+              completedSessionsLog: activePackage?.sessions?.filter((s: any) => s.status === 'COMPLETED' && s.report).map((s: any) => ({
+                date: new Date(s.report.date).toLocaleDateString("fa-IR"),
+                completedExercisesCount: 0, // This data is abstract in the new DB model, set to 0 or derive from elsewhere
+                notes: s.report.clinicalNotes || ""
+              })) || []
+            };
+          });
+          setApiClients(mappedClients);
+          if (mappedClients.length > 0 && !activeClientId) {
+            onSelectClient(mappedClients[0].id);
+          }
+        }
+
+        if (financesData.success) {
+          setFinances(financesData.data);
+        }
+      } catch (err) {
+        console.error('Error fetching coach data', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCoachData();
+  }, []);
+
+  const clients = apiClients.length > 0 ? apiClients : mockClients;
+
   
   // AI assistant state
   const [aiPrompt, setAiPrompt] = useState<string>("");
@@ -81,9 +167,40 @@ export const CoachPortal: React.FC<CoachPortalProps> = ({
     }));
   };
 
-  const handleEndSessionClick = () => {
+  const [patientFeedbackNotes, setPatientFeedbackNotes] = useState<string>("");
+  const [nextStepsNotes, setNextStepsNotes] = useState<string>("");
+
+  const handleEndSessionClick = async () => {
     if (!activeClient) return;
     const completedCount = Object.values(exerciseChecklist).filter(Boolean).length;
+
+    try {
+      const token = localStorage.getItem('token');
+      if (token && apiClients.length > 0) {
+        // Need to create a mock session first to test the endpoint, or assume the backend has a session ready
+        const mockSessionRes = await fetch('http://localhost:5000/api/coach/mock-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ patientProfileId: activeClient.id })
+        });
+        const sessionData = await mockSessionRes.json();
+
+        if (sessionData.success && sessionData.data) {
+           await fetch(`http://localhost:5000/api/coach/sessions/${sessionData.data.id}/report`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({
+                  clinicalNotes: sessionNotes,
+                  patientFeedback: patientFeedbackNotes || "ثبت نشده",
+                  nextSteps: nextStepsNotes || "ثبت نشده"
+              })
+           });
+        }
+      }
+    } catch(err) {
+       console.error("Error submitting session report to API", err);
+    }
+
     onEndSession(activeClient.id, sessionNotes, completedCount);
     // Reset checklists
     setExerciseChecklist({
@@ -189,19 +306,27 @@ export const CoachPortal: React.FC<CoachPortalProps> = ({
       <div className="lg:col-span-4 space-y-6" id="coach-sidebar">
         
         {/* Clinician Profile */}
-        <div className="p-4 rounded-3xl bg-zinc-900/80 border border-zinc-800 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-            <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLy_bGmWJwuJOH61GdlkzYy5wJQ4XN6AW1y7E6GsdMyCUXpO76k28PDnFUwWN3Uq1CdvGKi2NigxCOYL9ZsqqwDGyzn5luHngCcOsm--qSEPFtwPZMtOx3Y2hsGm2nCfnSdC3rdQ9Y7_VUvZRQw_qcoAP__BUSlbUPpYNPJyWfKvQXargZqC3fVqew8apYy2Hl_8OvpS1AD4WuhGbg177zd3ft-lC5Nkem7TQ-kclhwicnlxWquKvGOKJcpAssR15OP3ZoJ5WpynQ"
-              alt="Dr. Amir Habibi"
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
+        <div className="p-4 rounded-3xl bg-zinc-900/80 border border-zinc-800 flex flex-col gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+              <img
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLy_bGmWJwuJOH61GdlkzYy5wJQ4XN6AW1y7E6GsdMyCUXpO76k28PDnFUwWN3Uq1CdvGKi2NigxCOYL9ZsqqwDGyzn5luHngCcOsm--qSEPFtwPZMtOx3Y2hsGm2nCfnSdC3rdQ9Y7_VUvZRQw_qcoAP__BUSlbUPpYNPJyWfKvQXargZqC3fVqew8apYy2Hl_8OvpS1AD4WuhGbg177zd3ft-lC5Nkem7TQ-kclhwicnlxWquKvGOKJcpAssR15OP3ZoJ5WpynQ"
+                alt="Dr. Amir Habibi"
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white">دکتر امیر حبیبی (مدیر کلینیک)</h3>
+              <span className="text-[10px] text-zinc-500 block font-mono">CHIEF REHABILITATION DIRECTOR</span>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-black text-white">دکتر امیر حبیبی (مدیر کلینیک)</h3>
-            <span className="text-[10px] text-zinc-500 block font-mono">CHIEF REHABILITATION DIRECTOR</span>
-          </div>
+          {apiClients.length > 0 && (
+            <div className="pt-3 border-t border-zinc-800 flex justify-between items-center text-xs">
+              <span className="text-zinc-400">درآمد (پورسانت ۶۰٪):</span>
+              <span className="font-bold text-emerald-400 font-mono">{finances.totalIncome.toLocaleString()} تومان</span>
+            </div>
+          )}
         </div>
 
         {/* Client Manager List */}
@@ -423,20 +548,81 @@ export const CoachPortal: React.FC<CoachPortalProps> = ({
                 </div>
               </div>
 
+              {/* Patient Submission Videos */}
+              {activeClient.prescription.filter(ex => ex.videoUrl).length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-zinc-800">
+                  <span className="text-xs text-zinc-400 font-bold block flex items-center gap-1.5">
+                    <Play className="w-4 h-4 text-emerald-400" />
+                    ویدیوهای ارسالی بیمار جهت بررسی:
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                     {activeClient.prescription.filter(ex => ex.videoUrl).map(ex => (
+                        <div key={`video-${ex.id}`} className="bg-zinc-950/60 border border-zinc-900 rounded-xl p-3 flex justify-between items-center">
+                           <span className="text-xs text-white">{ex.name}</span>
+                           <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors">
+                              مشاهده ویدیو
+                           </a>
+                        </div>
+                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Patient Progress Logs (History) */}
+              <div className="space-y-3 pt-4 border-t border-zinc-800">
+                <span className="text-xs text-zinc-400 font-bold block flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-teal-400" />
+                  سابقه جلسات و گزارش‌های قبلی
+                </span>
+                <div className="max-h-[150px] overflow-y-auto space-y-2 pr-1">
+                   {activeClient.completedSessionsLog.length > 0 ? activeClient.completedSessionsLog.map((log, idx) => (
+                      <div key={idx} className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800/60 text-right space-y-1">
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="font-bold text-teal-400">جلسه تایید شده</span>
+                          <span className="text-zinc-500 font-mono">{log.date}</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-300">
+                          {log.notes}
+                        </p>
+                      </div>
+                   )) : (
+                     <div className="text-xs text-zinc-500 text-center py-4">گزارش جلسه‌ای ثبت نشده است.</div>
+                   )}
+                </div>
+              </div>
+
               {/* Notes & Diagnostics input for this session */}
-              <div className="space-y-2">
+              <div className="space-y-3 pt-4 border-t border-zinc-800">
                 <label className="text-xs text-zinc-300 font-bold block flex items-center gap-1.5">
                   <FileText className="w-4 h-4 text-zinc-400" />
-                  یادداشت تشخیصی و کینزیولوژی جلسه {activeClient.sessionsCompleted + 1}:
+                  فرم گزارش جلسه {activeClient.sessionsCompleted + 1}:
                 </label>
-                <textarea
-                  id="clinical-session-notes-textarea"
-                  value={sessionNotes}
-                  onChange={(e) => setSessionNotes(e.target.value)}
-                  rows={3}
-                  className="w-full p-3 bg-zinc-950/80 border border-zinc-850 rounded-xl text-xs text-zinc-300 focus:outline-none focus:border-emerald-500 transition-all text-right leading-relaxed resize-none"
-                  placeholder="شرحی از وضعیت سیستم عصبی عضلانی یا دامنه حرکتی ایمن..."
-                />
+                <div className="space-y-2">
+                  <textarea
+                    id="clinical-session-notes-textarea"
+                    value={sessionNotes}
+                    onChange={(e) => setSessionNotes(e.target.value)}
+                    rows={2}
+                    className="w-full p-3 bg-zinc-950/80 border border-zinc-850 rounded-xl text-xs text-zinc-300 focus:outline-none focus:border-emerald-500 transition-all text-right leading-relaxed resize-none"
+                    placeholder="یادداشت‌های بالینی..."
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <textarea
+                      value={patientFeedbackNotes}
+                      onChange={(e) => setPatientFeedbackNotes(e.target.value)}
+                      rows={2}
+                      className="w-full p-2.5 bg-zinc-950/80 border border-zinc-850 rounded-xl text-xs text-zinc-300 focus:outline-none focus:border-emerald-500 transition-all text-right leading-relaxed resize-none"
+                      placeholder="بازخورد بیمار (مثلا: احساس درد حین حرکت)..."
+                    />
+                    <textarea
+                      value={nextStepsNotes}
+                      onChange={(e) => setNextStepsNotes(e.target.value)}
+                      rows={2}
+                      className="w-full p-2.5 bg-zinc-950/80 border border-zinc-850 rounded-xl text-xs text-zinc-300 focus:outline-none focus:border-emerald-500 transition-all text-right leading-relaxed resize-none"
+                      placeholder="گام‌های بعدی پیشرفت..."
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* MASSIVE ACTION END SESSION CTA BUTTON */}
