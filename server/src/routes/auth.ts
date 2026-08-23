@@ -4,7 +4,10 @@ import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-for-dev';
+if (!process.env.JWT_SECRET) {
+  throw new Error("FATAL ERROR: JWT_SECRET environment variable is not defined.");
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
   try {
