@@ -143,3 +143,10 @@ Note:
 - Badges section is a placeholder since no CI/CD or registry is currently detected.
 - Contributing section is formulated according to the proprietary nature of the project.
 -->
+
+## License
+
+This project is proprietary and confidential. All rights reserved.
+See [LICENSE](./LICENSE) for details. Unauthorized copying, distribution,
+or use of this code, in whole or in part, is prohibited without prior
+written permission from the copyright holder.
