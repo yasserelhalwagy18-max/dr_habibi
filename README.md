@@ -1,17 +1,22 @@
 # Dr. Habibi
 > An online platform for corrective exercises and sports rehabilitation
 
-## 📸 Overview
-Dr. Habibi is a specialized platform designed for managing sports rehabilitation and corrective exercises. It connects patients with verified coaches who prescribe custom exercise routines, track clinical metrics, and monitor session progress.
+<!-- Badges placeholder: build status, license, version -->
+<!-- e.g. [![Build Status](...)]() [![License: Proprietary](...)]() -->
 
-## 🏗 Architecture
-The application is structured as a client/server split.
-- **Frontend**: A Single Page Application (SPA) built with React and Vite. It handles routing locally and maintains distinct portal views for Patients, Coaches, and Admins.
-- **Backend**: A Node.js/Express server that manages the business logic, API endpoints, and authentication.
-- **Database**: PostgreSQL database managed via Prisma ORM (v5).
-- **Storage**: S3-compatible cloud storage (e.g., ArvanCloud) for handling secure file uploads like patient assessment videos.
+## Table of Contents
+1. [Features](#features)
+2. [Tech Stack](#tech-stack)
+3. [Prerequisites](#prerequisites)
+4. [Installation](#installation)
+5. [Environment Variables](#environment-variables)
+6. [Running Locally](#running-locally)
+7. [Running Tests](#running-tests)
+8. [Project Structure](#project-structure)
+9. [Contributing](#contributing)
+10. [License](#license)
 
-## ✨ Features
+## Features
 - **Role-Based Portals**: Distinct dashboards and interfaces for Patients, Coaches, and Administrators with protected routes.
 - **Coach Management**: Admin verification system for coach accounts; assignment algorithms matching patients based on gender and age constraints.
 - **Exercise Prescriptions**: Detailed exercise assignments, including patient video submissions for technique review and daily clinical metric check-ins (pain, sleep, mood).
@@ -19,64 +24,122 @@ The application is structured as a client/server split.
 - **Real-Time Chat**: Direct messaging between assigned patients and coaches using Socket.io.
 - **Notification System**: Structurally distinct notifications for system alerts (assignments, payment updates, exercise feedback).
 - **Payment Gateway Integration**: Mocked integration for Zarinpal payment processing, supporting package purchases and discount codes (percentage or fixed amount).
+- **Progress Tracking**: Track clinical metrics (pain, sleep, mood) via a unified progress check-in model and pain log.
+- **Data Export & Reporting**: Export tools utilizing html2canvas and jspdf.
 
-## 🛠 Tech Stack
-- **Frontend**: React 19, Vite, Tailwind CSS (v4), Zustand, React Router DOM (v7), Lucide React, Framer Motion.
-- **Backend**: Node.js, Express, Prisma ORM (v5), PostgreSQL, Socket.io, JWT Authentication, AWS SDK (S3), Multer.
+## Tech Stack
+### Frontend
+- **Framework**: React 19, Vite
+- **Styling**: Tailwind CSS (v4), Framer Motion, Lucide React
+- **State Management**: Zustand
+- **Routing**: React Router DOM (v7)
+- **Data Visualization**: Recharts
+- **PDF Generation**: HTML2Canvas, jsPDF
+- **Networking/Real-time**: Socket.io-client
 
-## 📋 Prerequisites
-- Node.js (v18 or higher recommended)
-- PostgreSQL Database
-- S3-compatible Storage Bucket (AWS, ArvanCloud, etc.)
+### Backend
+- **Runtime/Framework**: Node.js, Express (v5.2.1)
+- **Database ORM**: Prisma Client (v5.22.0)
+- **Authentication**: JSON Web Tokens (jsonwebtoken)
+- **Real-time**: Socket.io
+- **Storage/File Uploads**: AWS SDK S3 Client, Multer
+- **Other**: UUID, node-fetch, dotenv, cors
 
-## 🚀 Installation
+## Prerequisites
+- **Node.js**: v18 or higher recommended
+- **Database**: PostgreSQL
+- **Storage**: S3-compatible Storage Bucket (AWS, ArvanCloud, etc.)
 
-1. **Clone the repository** (if you haven't already):
-   `git clone <repository-url>`
-   `cd dr_habibi`
-
+## Installation
+1. **Clone the repository**:
+   ```sh
+   git clone <repository-url>
+   cd dr_habibi
+   ```
 2. **Install Frontend Dependencies**:
-   `npm install`
-
+   ```sh
+   npm install
+   ```
 3. **Install Backend Dependencies**:
-   `cd server`
-   `npm install`
+   ```sh
+   cd server
+   npm install
+   ```
+4. **Database Setup**:
+   Ensure your PostgreSQL database is running, then apply the schema and generate the Prisma Client:
+   ```sh
+   cd server
+   npx prisma db push
+   npx prisma generate
+   ```
 
-## ⚙️ Environment Variables
+## Environment Variables
+Copy `.env.example` to `.env` in both the root and `server` directories and populate them.
 
-Copy the `.env.example` file to `.env` in both the root and `server` directories and fill in the values.
+### Frontend (.env.local)
+| Variable | Description | Required | Example |
+| :--- | :--- | :---: | :--- |
+| `DISABLE_HMR` | Disable Hot Module Replacement in Vite | No | `true` |
+| `GEMINI_API_KEY` | Key for AI features (if used) | No | `AIzaSy...` |
 
-| Variable | Description | Required | Location |
-| :--- | :--- | :---: | :---: |
-| `DISABLE_HMR` | Disable Hot Module Replacement (set to 'true') | No | Root |
-| `GEMINI_API_KEY` | Key for AI features (if used) | No | Root |
-| `PORT` | Port for the backend server (default 5000) | **Yes** | Server |
-| `DATABASE_URL` | PostgreSQL connection string | **Yes** | Server |
-| `JWT_SECRET` | Secret key for signing JSON Web Tokens | **Yes** | Server |
-| `S3_REGION` | S3 Region (e.g., us-east-1, or 'default') | No | Server |
-| `S3_ACCESS_KEY` | S3 Access Key ID | **Yes** | Server |
-| `S3_SECRET_KEY` | S3 Secret Access Key | **Yes** | Server |
-| `S3_ENDPOINT` | Custom S3 Endpoint URL (Required for ArvanCloud) | No | Server |
-| `S3_BUCKET_NAME` | The name of the S3 bucket to store files | **Yes** | Server |
+### Backend (server/.env)
+| Variable | Description | Required | Example |
+| :--- | :--- | :---: | :--- |
+| `PORT` | Backend server port | **Yes** | `5000` |
+| `DATABASE_URL` | PostgreSQL connection string | **Yes** | `postgres://user:pass@localhost:5432/dbname` |
+| `JWT_SECRET` | Secret key for signing JWTs | **Yes** | `supersecretkey` |
+| `S3_REGION` | S3 Region | No | `default` |
+| `S3_ACCESS_KEY` | S3 Access Key ID | **Yes** (if using S3) | `AKIAIOSFODNN7EXAMPLE` |
+| `S3_SECRET_KEY` | S3 Secret Access Key | **Yes** (if using S3) | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` |
+| `S3_ENDPOINT` | Custom S3 Endpoint URL (e.g. ArvanCloud) | No | `https://s3.ir-thr-at1.arvanstorage.ir` |
+| `S3_BUCKET_NAME` | Name of the S3 bucket | **Yes** (if using S3) | `dr-habibi-assets` |
 
-## 🏃 Running the App
+## Running Locally
 
-1. **Start the Backend** (from the `server` directory):
-   Ensure your PostgreSQL database is running, then apply migrations:
-   `npx prisma generate`
-   `npx prisma db push`
-   (Then start your node development script)
+1. **Start the Backend**:
+   ```sh
+   cd server
+   npm run start:dev
+   ```
+   *(Note: Ensure you have run the Database Setup commands listed in the Installation section before starting the server. If using the default script, run `npm run dev`.)*
 
-2. **Start the Frontend** (from the root directory):
-   (Start your vite development script)
+2. **Start the Frontend**:
+   ```sh
+   npm run start:dev
+   ```
+   *(If using the default script, run `npm run dev`.)*
    The frontend will typically be available at `http://localhost:3000` (or the port specified by Vite).
 
-## 🧪 Tests
-Testing framework is not yet configured for this project.
+## Running Tests
+No tests configured yet.
 
-## 📄 License
+## Project Structure
+```text
+dr_habibi/
+├── src/                 # Frontend React application source code
+│   ├── components/      # Reusable UI components
+│   ├── layouts/         # Page layout wrappers (Public, Protected)
+│   ├── pages/           # Route components (Public, Patient, Coach, Admin)
+│   └── store.ts         # Zustand global state management
+├── server/              # Backend Node.js/Express application
+│   ├── src/             # Backend source code (Controllers, Routes, etc.)
+│   └── prisma/          # Prisma ORM schema and migrations
+├── dist/                # Frontend production build output
+└── package.json         # Frontend dependencies and scripts
+```
+
+## Contributing
+This is a private, proprietary project. External contributions are not accepted.
+
+## License
 Copyright (c) 2026 sadegh shahidi / SA / Dr.habibi
 
 All rights reserved. This source code is proprietary and confidential.
 Unauthorized copying, distribution, or use of this code, via any medium,
 is strictly prohibited without prior written permission from the copyright holder.
+
+<!--
+Note:
+- Badges section is a placeholder since no CI/CD or registry is currently detected.
+- Contributing section is formulated according to the proprietary nature of the project.
+-->
