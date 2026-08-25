@@ -109,3 +109,9 @@ dist
 
 # Prisma
 /src/generated/prisma
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
