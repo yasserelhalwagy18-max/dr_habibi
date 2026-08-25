@@ -31,3 +31,13 @@ build/
 
 # Prisma
 /prisma/generated/
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Uploads / Tmp
+uploads/
+tmp/
