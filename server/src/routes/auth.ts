@@ -4,12 +4,14 @@ import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
 const prisma = new PrismaClient();
-if (!process.env.JWT_SECRET) {
-  throw new Error("FATAL ERROR: JWT_SECRET environment variable is not defined.");
-}
-const JWT_SECRET = process.env.JWT_SECRET;
 
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
+  if (!process.env.JWT_SECRET) {
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
+    return;
+  }
+  const JWT_SECRET = process.env.JWT_SECRET;
+
   try {
     const { email } = req.body; // Very simple mockup login for this task
 

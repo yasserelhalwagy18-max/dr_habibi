@@ -1,3 +1,4 @@
+import { calculateFinalAmount } from "../utils/finance.js";
 import express, { type Request, type Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -55,11 +56,7 @@ router.post('/checkout', async (req: Request, res: Response): Promise<void> => {
         return;
       }
 
-      if (discount.type === 'PERCENTAGE') {
-        finalAmount = baseAmount - (baseAmount * (discount.value / 100));
-      } else if (discount.type === 'FIXED') {
-        finalAmount = Math.max(0, baseAmount - discount.value);
-      }
+      finalAmount = calculateFinalAmount(baseAmount, discount.type as 'PERCENTAGE' | 'FIXED', discount.value);
 
       discountCodeId = discount.id;
     }

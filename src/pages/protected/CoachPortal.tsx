@@ -21,7 +21,8 @@ import {
   TrendingDown,
   Sparkles,
   RefreshCw,
-  Search
+  Search,
+  Play
 } from "lucide-react";
 
 interface CoachPortalProps {
