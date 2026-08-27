@@ -1,3 +1,4 @@
+import { calculateCommission } from "../utils/finance.js";
 import express, { type Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateJWT, type AuthRequest } from '../utils/authMiddleware.js';
@@ -191,9 +192,9 @@ router.post('/sessions/:id/report', authenticateJWT, async (req: AuthRequest, re
       // 4. Calculate commission (e.g., 60% of package price / number of sessions)
       const packagePrice = session.patientPackage.package.price;
       const totalSessions = session.patientPackage.package.numberOfSessions;
-      const commissionRate = 0.60; // 60% fixed as per requirements
+      const commissionAmountPerSession = calculateCommission(packagePrice, totalSessions);
 
-      const commissionAmountPerSession = (packagePrice * commissionRate) / totalSessions;
+
 
       // Log commission in Transaction
       const transaction = await tx.transaction.create({
