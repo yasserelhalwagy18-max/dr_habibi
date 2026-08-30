@@ -96,6 +96,23 @@ Copy `.env.example` to `.env` in both the root and `server` directories and popu
 
 ## Running Locally
 
+### Running with Docker (Recommended for Development)
+To run the entire stack (Database, Backend, and Frontend) via Docker Compose:
+
+1. Ensure Docker and Docker Compose are installed.
+2. Copy `.env.example` to `.env` in both the root and `server` directories.
+3. Run the following command from the root directory:
+   ```sh
+   docker-compose up -d
+   ```
+   This will spin up a PostgreSQL instance, start the backend on port 5000, and start the frontend on port 3000. It will automatically install dependencies and run database migrations.
+4. To stop the containers:
+   ```sh
+   docker-compose down
+   ```
+
+### Running Manually
+
 1. **Start the Backend**:
    ```sh
    cd server
