@@ -1,6 +1,28 @@
+/*
+ * ERROR TRACKING INITIALIZATION (e.g., Sentry)
+ * =========================================================================
+ * If you integrate an error tracking service like Sentry, initialize it
+ * here at the VERY TOP of the file, BEFORE importing any other local
+ * files, Express middleware, or environment setups. This ensures the SDK
+ * can catch unhandled exceptions or crashes that occur during application
+ * startup.
+ *
+ * Example for Sentry:
+ * import * as Sentry from "@sentry/node";
+ *
+ * Sentry.init({
+ *   dsn: process.env.SENTRY_DSN,
+ *   environment: process.env.NODE_ENV,
+ *   tracesSampleRate: 1.0,
+ * });
+ * =========================================================================
+ */
+
 import path from 'path';
 import express, { type Request, type Response } from 'express';
 import cors from 'cors';
+import { requestLogger } from './middleware/logger.js';
+import { errorHandler } from './middleware/errorHandler.js';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import { uploadToS3 } from './utils/s3.js';
@@ -12,10 +34,13 @@ import authRoutes from './routes/auth.js';
 import patientRoutes from './routes/patient.js';
 import coachRoutes from './routes/coach.js';
 import chatRoutes from './routes/chat.js';
+import healthRoutes from './routes/health.js';
 
 dotenv.config();
 
 const app = express();
+app.use(express.json());
+app.use(requestLogger);
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -43,6 +68,7 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/patient', patientRoutes);
 app.use('/api/coach', coachRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/health', healthRoutes);
 
 // Socket.io for Real-time Chat
 io.on('connection', (socket) => {
@@ -310,6 +336,8 @@ app.post('/api/admin/notifications', async (req: Request, res: Response): Promis
 // Serve static frontend files in production
 const frontendDistPath = path.resolve(process.cwd(), '../dist');
 app.use(express.static(frontendDistPath));
+
+app.use(errorHandler);
 
 app.get('*', (req: Request, res: Response) => {
   // Exclude /api routes from the fallback
