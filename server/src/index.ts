@@ -1,3 +1,4 @@
+import path from 'path';
 import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -303,6 +304,20 @@ app.post('/api/admin/notifications', async (req: Request, res: Response): Promis
     console.error('Error creating notification:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
+});
+
+
+// Serve static frontend files in production
+const frontendDistPath = path.resolve(process.cwd(), '../dist');
+app.use(express.static(frontendDistPath));
+
+app.get('*', (req: Request, res: Response) => {
+  // Exclude /api routes from the fallback
+  if (req.path.startsWith('/api')) {
+    res.status(404).json({ success: false, error: 'API route not found' });
+    return;
+  }
+  res.sendFile(path.join(frontendDistPath, 'index.html'));
 });
 
 httpServer.listen(port, () => {
