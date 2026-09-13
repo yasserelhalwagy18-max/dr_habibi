@@ -3,11 +3,10 @@
 This guide will walk you through the step-by-step process of uploading and running this project on a cPanel hosting account. It is written for beginners, so don't worry if you haven't done this before!
 
 ## Important Notes Before Starting
-*   **Database:** This project is built to use **PostgreSQL**. Most standard cPanel accounts only offer **MySQL**. You have two options:
-    1.  Ask your hosting provider if they can enable PostgreSQL on your cPanel account.
-    2.  Use a free/cheap external PostgreSQL database provider (like Supabase, Neon, or Render) and just connect to it from your cPanel. *This guide assumes you have a PostgreSQL Database URL ready.*
+*   **Database:** This project is built to use **MySQL**, which is standard on most cPanel accounts.
 *   **Structure:** We will put the frontend (what the user sees) on your main domain, and the backend (the server) in a separate folder running via cPanel's Node.js App feature.
 *   **Terminal:** While we will build the project on your own computer first (to avoid complex commands on cPanel), we will still need to run a couple of simple commands in the cPanel Terminal to set up the database.
+*   **npm edgesOut error:** If you experience an `edgesOut` error or a `Cannot read properties of null (reading 'edgesOut')` error when running `npm install`, this indicates a corrupted npm cache or `package-lock.json`. This guide includes steps to fix it.
 
 ---
 
@@ -18,11 +17,13 @@ To avoid errors on the server, it's easiest to "build" (compile) the project on 
 1.  **Open your terminal/command prompt** on your computer.
 2.  **Build the Frontend:**
     *   Navigate to the main folder of the project.
+    *   **Fix edgesOut (if needed):** Run `rm package-lock.json` (Mac/Linux) or `del package-lock.json` (Windows) before installing.
     *   Run this command: `npm install` (Wait for it to finish)
     *   Run this command: `npm run build`
     *   This will create a folder called `dist`. This folder contains your entire frontend ready for the web.
 3.  **Build the Backend:**
     *   In your terminal, navigate into the server folder: `cd server`
+    *   **Fix edgesOut (if needed):** Run `rm package-lock.json` (Mac/Linux) or `del package-lock.json` (Windows) before installing.
     *   Run this command: `npm install`
     *   Run this command: `npm run build`
     *   This will create a `dist` folder inside the `server` folder.
@@ -46,9 +47,21 @@ Now we need to package the files so they are easy to upload.
 
 ---
 
-## Step 3: Upload to cPanel
+## Step 3: Create a MySQL Database in cPanel
 
 1.  Log in to your **cPanel**.
+2.  Find and click on **MySQL® Databases**.
+3.  **Create New Database:** Enter a name (e.g., `drhabibi`) and click **Create Database**. Note the full name (e.g., `yourusername_drhabibi`).
+4.  **Create New User:** Scroll down to "MySQL Users". Enter a username (e.g., `dbuser`) and a strong password. Click **Create User**. Note the full username and password.
+5.  **Add User To Database:** Scroll down further. Select your new user and your new database. Click **Add**. Check the box for **ALL PRIVILEGES** and click **Make Changes**.
+6.  **Construct your Database URL:** Your connection string for MySQL will look like this (replace the placeholders with your exact details):
+    `mysql://yourusername_dbuser:your_password@localhost:3306/yourusername_drhabibi`
+
+---
+
+## Step 4: Upload to cPanel
+
+1.  Go back to the main cPanel dashboard.
 2.  Find and click on **File Manager**.
 
 **A. Upload the Frontend:**
@@ -80,7 +93,7 @@ Now we need to package the files so they are easy to upload.
 
 ---
 
-## Step 4: Setup the Node.js App in cPanel
+## Step 5: Setup the Node.js App in cPanel
 
 1.  Go back to the main cPanel dashboard.
 2.  Search for and click on **Setup Node.js App**.
@@ -88,7 +101,7 @@ Now we need to package the files so they are easy to upload.
 4.  Fill in the details:
     *   **Node.js version:** Choose the highest available version (e.g., 18 or 20).
     *   **Application mode:** Production
-    *   **Application root:** `drhabibi_backend` (the folder you created in Step 3B).
+    *   **Application root:** `drhabibi_backend` (the folder you created in Step 4B).
     *   **Application URL:** Select your domain and type `api` in the box next to it (so it looks like `yourdomain.com/api`).
     *   **Application startup file:** `dist/index.js`
 5.  Click **Create**.
@@ -96,7 +109,7 @@ Now we need to package the files so they are easy to upload.
 **Add Environment Variables:**
 Scroll down on that same page to the "Environment variables" section. You need to add these by clicking "Add Variable":
 *   Name: `PORT`, Value: (Leave blank or whatever port cPanel gives you)
-*   Name: `DATABASE_URL`, Value: `your_postgresql_database_connection_url_here`
+*   Name: `DATABASE_URL`, Value: `mysql://yourusername_dbuser:your_password@localhost:3306/yourusername_drhabibi` (The URL you created in Step 3)
 *   Name: `JWT_SECRET`, Value: `make_up_a_long_random_password_here`
 *   Name: `FRONTEND_URL`, Value: `https://yourdomain.com`
 
@@ -104,14 +117,14 @@ Scroll down on that same page to the "Environment variables" section. You need t
 
 ---
 
-## Step 5: Install Packages and Setup Database
+## Step 6: Install Packages and Setup Database
 
 Now we use the terminal for a few quick commands.
 
 1.  On the "Setup Node.js App" page where you just created the app, look for a section that says "Command for entering to virtual environment" (it will look something like `source /home/username/nodevenv/drhabibi_backend/20/bin/activate`). **Copy that command.**
 2.  Go back to the main cPanel dashboard and click on **Terminal**.
 3.  Paste the command you just copied and press Enter. Your prompt should change to show you are in the virtual environment.
-4.  Run this command to install the backend packages:
+4.  Run this command to install the backend packages (if you get the `edgesOut` error here, run `rm package-lock.json` first, then run `npm install` again):
     ```bash
     npm install
     ```
@@ -119,12 +132,12 @@ Now we use the terminal for a few quick commands.
     ```bash
     npx prisma generate
     ```
-6.  Run this command to push the database structure to your database (Make sure your `DATABASE_URL` was set correctly in Step 4!):
+6.  Run this command to push the database structure to your MySQL database:
     ```bash
     npx prisma db push
     ```
 
-## Step 6: Restart and Test
+## Step 7: Restart and Test
 
 1.  Go back to the **Setup Node.js App** page in cPanel.
 2.  Find your `drhabibi_backend` app and click the **Restart** button.

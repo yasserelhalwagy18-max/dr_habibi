@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -95,7 +95,7 @@ model CoachProfile {
   id             String   @id @default(uuid())
   userId         String   @unique
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  specialties    String[]
+  specialties    Json
   bio            String?
   commissionRate Float    @default(0.0) // E.g., 0.20 for 20%
   isApproved     Boolean  @default(false)
@@ -107,15 +107,15 @@ model CoachProfile {
 }
 
 model SessionReport {
-  id               String   @id @default(uuid())
-  sessionId        String   @unique
-  session          Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  date             DateTime @default(now())
-  clinicalNotes    String?
-  patientFeedback  String?
-  nextSteps        String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(uuid())
+  sessionId       String   @unique
+  session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  date            DateTime @default(now())
+  clinicalNotes   String?
+  patientFeedback String?
+  nextSteps       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Package {
@@ -237,7 +237,7 @@ model AssessmentForm {
   painIntensity  Int
   history        String
   goals          String
-  mediaUrls      String[]
+  mediaUrls      Json
   assessmentPaid Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
